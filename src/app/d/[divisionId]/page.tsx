@@ -103,6 +103,11 @@ export default async function DivisionPage({ params }: Props) {
             <Pill>정답 {division.pointsCorrect}점</Pill>
             <Pill>오답 {division.pointsWrong}점</Pill>
           </div>
+          <div className="mt-3">
+            <Link href={`/d/${division.id}/analysis`} className="text-sm text-zinc-300 hover:text-zinc-50">
+              유형별 성적 보기 →
+            </Link>
+          </div>
         </div>
         <Link href="/admin" className="text-sm text-zinc-300 hover:text-zinc-50">
           관리자에서 입력하기 →

@@ -43,6 +43,7 @@ model Question {
   divisionId      String
   title           String
   description     String?
+  questionType    String?
   pointsCorrect   Int?
   pointsWrong     Int?
   openAt          DateTime     @default(now())
@@ -58,6 +59,7 @@ model Question {
 
   @@index([divisionId])
   @@index([resolvedAt])
+  @@index([questionType])
 }
 
 model Option {

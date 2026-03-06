@@ -12,6 +12,7 @@ type Question = {
   divisionId: string;
   title: string;
   description: string | null;
+  questionType: string | null;
   resolvedAt: string | null;
   correctOptionId: string | null;
   pointsCorrect: number | null;
@@ -26,9 +27,12 @@ const QuestionCreateSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   options: z.array(z.string().min(1)).min(2).max(8),
+  questionType: z.string().optional(),
   pointsCorrect: z.coerce.number().int().min(0).optional(),
   pointsWrong: z.coerce.number().int().min(0).optional()
 });
+
+const TYPE_PRESETS = ["시장/가격", "정치/정책", "스포츠", "기술/제품", "연예/문화", "날씨/재난", "거시경제", "기타"] as const;
 
 export default function AdminQuestionsPage() {
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -43,6 +47,8 @@ export default function AdminQuestionsPage() {
     title: "",
     description: "",
     optionsText: "Yes\nNo",
+    questionTypePreset: "시장/가격",
+    questionTypeCustom: "",
     pointsCorrect: "3",
     pointsWrong: "0"
   });
@@ -123,6 +129,20 @@ export default function AdminQuestionsPage() {
         <Input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} placeholder="질문 제목 (예: 2026-03-10 BTC가 10만 달러를 넘을까?)" />
         <Textarea value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} placeholder="설명(선택)" />
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <Select value={draft.questionTypePreset} onChange={(e) => setDraft((d) => ({ ...d, questionTypePreset: e.target.value }))}>
+            {TYPE_PRESETS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </Select>
+          <Input
+            value={draft.questionTypeCustom}
+            onChange={(e) => setDraft((d) => ({ ...d, questionTypeCustom: e.target.value }))}
+            placeholder="유형 직접 입력(선택)"
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <Input value={draft.pointsCorrect} onChange={(e) => setDraft((d) => ({ ...d, pointsCorrect: e.target.value }))} placeholder="정답 점수 (기본 3)" />
           <Input value={draft.pointsWrong} onChange={(e) => setDraft((d) => ({ ...d, pointsWrong: e.target.value }))} placeholder="오답 점수 (기본 0)" />
         </div>
@@ -136,11 +156,13 @@ export default function AdminQuestionsPage() {
                 .split("\n")
                 .map((s) => s.trim())
                 .filter(Boolean);
+              const questionType = (draft.questionTypeCustom || draft.questionTypePreset || "").trim();
               const parsed = QuestionCreateSchema.safeParse({
                 divisionId: draft.divisionId,
                 title: draft.title,
                 description: draft.description || undefined,
                 options,
+                questionType: questionType ? questionType : undefined,
                 pointsCorrect: draft.pointsCorrect ? Number(draft.pointsCorrect) : undefined,
                 pointsWrong: draft.pointsWrong ? Number(draft.pointsWrong) : undefined
               });
@@ -163,6 +185,7 @@ export default function AdminQuestionsPage() {
               <div className="min-w-0">
                 <div className="text-sm font-semibold">{q.title}</div>
                 {q.description && <div className="mt-1 text-sm text-zinc-300">{q.description}</div>}
+                {q.questionType && <div className="mt-2 text-xs text-zinc-400">유형: {q.questionType}</div>}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {q.options
                     .slice()

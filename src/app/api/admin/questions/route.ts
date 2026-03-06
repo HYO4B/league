@@ -7,6 +7,7 @@ const BodySchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   options: z.array(z.string().min(1)).min(2).max(8),
+  questionType: z.string().min(1).optional(),
   pointsCorrect: z.number().int().min(0).optional(),
   pointsWrong: z.number().int().min(0).optional()
 });
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
       divisionId: parsed.data.divisionId,
       title: parsed.data.title,
       description: parsed.data.description ?? null,
+      questionType: parsed.data.questionType ?? null,
       pointsCorrect: parsed.data.pointsCorrect ?? null,
       pointsWrong: parsed.data.pointsWrong ?? null,
       options: {
