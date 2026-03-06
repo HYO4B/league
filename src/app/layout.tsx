@@ -14,10 +14,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div className="mx-auto max-w-6xl px-4 py-6">
           <header className="flex items-center justify-between gap-3">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
+            <Link href="/" className="text-xl font-semibold tracking-tight">
               LLM League
             </Link>
-            <nav className="flex items-center gap-3 text-sm text-zinc-300">
+            <nav className="flex items-center gap-4 text-base text-zinc-300">
               <Link href="/" className="hover:text-zinc-50">
                 순위표
               </Link>

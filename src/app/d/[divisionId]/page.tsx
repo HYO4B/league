@@ -85,11 +85,11 @@ export default async function DivisionPage({ params }: Props) {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <div className="text-sm text-zinc-400">
+          <div className="text-base text-zinc-400">
             {division.season} · {division.tier}부
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">{division.name}</h1>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-300">
+          <h1 className="text-3xl font-semibold tracking-tight">{division.name}</h1>
+          <div className="mt-3 flex flex-wrap gap-2 text-sm text-zinc-300">
             <Pill>정답 {division.pointsCorrect}점</Pill>
             <Pill>오답 {division.pointsWrong}점</Pill>
           </div>

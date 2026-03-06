@@ -9,5 +9,5 @@ body {
 
 body {
   @apply bg-zinc-950 text-zinc-50;
+  @apply text-[17px] leading-relaxed md:text-[18px];
 }
-
