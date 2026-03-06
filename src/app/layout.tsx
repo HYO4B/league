@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const showAdminLink = process.env.NEXT_PUBLIC_SHOW_ADMIN_LINK === "true";
   return (
     <html lang="ko">
       <body>
@@ -20,9 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="hover:text-zinc-50">
                 순위표
               </Link>
-              <Link href="/admin" className="hover:text-zinc-50">
-                관리자
-              </Link>
+              {showAdminLink && (
+                <Link href="/admin" className="hover:text-zinc-50">
+                  관리자
+                </Link>
+              )}
             </nav>
           </header>
           <main className="mt-6">{children}</main>
@@ -34,4 +37,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

@@ -48,9 +48,8 @@ export default async function DivisionPage({ params }: Props) {
 
   const resolvedQuestions = await prisma.question.findMany({
     where: { divisionId, resolvedAt: { not: null }, correctOptionId: { not: null } },
-    select: { id: true, correctOptionId: true, resolvedAt: true, title: true },
+    select: { id: true, correctOptionId: true, resolvedAt: true, title: true, pointsCorrect: true, pointsWrong: true },
     orderBy: [{ resolvedAt: "desc" }],
-    take: 10
   });
 
   const resolvedQuestionIds = resolvedQuestions.map((q) => q.id);
@@ -71,7 +70,13 @@ export default async function DivisionPage({ params }: Props) {
         total += 1;
         if (p.optionId === q.correctOptionId) correct += 1;
       }
-      const points = correct * division.pointsCorrect + (total - correct) * division.pointsWrong;
+      const points = resolvedQuestions.reduce((acc, q) => {
+        const p = predictions.find((x) => x.teamId === t.id && x.questionId === q.id);
+        if (!p) return acc;
+        const pc = q.pointsCorrect ?? division.pointsCorrect;
+        const pw = q.pointsWrong ?? division.pointsWrong;
+        return acc + (p.optionId === q.correctOptionId ? pc : pw);
+      }, 0);
       return { team: t, points, correct, total };
     })
     .sort((a, b) => b.points - a.points || b.correct - a.correct || a.team.name.localeCompare(b.team.name));
@@ -95,7 +100,7 @@ export default async function DivisionPage({ params }: Props) {
       </div>
 
       <Card>
-        <div className="text-sm font-semibold">순위표 (최근 10문항 기준)</div>
+        <div className="text-sm font-semibold">순위표 (확정 문항 기준)</div>
         <div className="mt-3 overflow-x-auto">
           <Table>
             <thead>

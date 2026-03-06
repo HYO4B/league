@@ -14,16 +14,20 @@ type Question = {
   description: string | null;
   resolvedAt: string | null;
   correctOptionId: string | null;
+  pointsCorrect: number | null;
+  pointsWrong: number | null;
   options: { id: string; label: string; order: number }[];
 };
 
-type Prediction = { teamId: string; questionId: string; optionId: string };
+type Prediction = { teamId: string; questionId: string; optionId: string; rawOutput?: string | null };
 
 const QuestionCreateSchema = z.object({
   divisionId: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional(),
-  options: z.array(z.string().min(1)).min(2).max(8)
+  options: z.array(z.string().min(1)).min(2).max(8),
+  pointsCorrect: z.coerce.number().int().min(0).optional(),
+  pointsWrong: z.coerce.number().int().min(0).optional()
 });
 
 export default function AdminQuestionsPage() {
@@ -37,7 +41,9 @@ export default function AdminQuestionsPage() {
     divisionId: "",
     title: "",
     description: "",
-    optionsText: "Yes\nNo"
+    optionsText: "Yes\nNo",
+    pointsCorrect: "3",
+    pointsWrong: "0"
   });
 
   async function refresh(divisionId?: string) {
@@ -71,8 +77,8 @@ export default function AdminQuestionsPage() {
   const divisionQuestions = useMemo(() => questions.filter((q) => q.divisionId === activeDivisionId).sort((a, b) => (a.resolvedAt ? 1 : 0) - (b.resolvedAt ? 1 : 0)), [questions, activeDivisionId]);
 
   const predictionsMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of predictions) map.set(`${p.teamId}:${p.questionId}`, p.optionId);
+    const map = new Map<string, { optionId: string; rawOutput: string }>();
+    for (const p of predictions) map.set(`${p.teamId}:${p.questionId}`, { optionId: p.optionId, rawOutput: p.rawOutput ?? "" });
     return map;
   }, [predictions]);
 
@@ -102,6 +108,10 @@ export default function AdminQuestionsPage() {
         <div className="text-sm font-semibold">질문 추가</div>
         <Input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} placeholder="질문 제목 (예: 2026-03-10 BTC가 10만 달러를 넘을까?)" />
         <Textarea value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} placeholder="설명(선택)" />
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <Input value={draft.pointsCorrect} onChange={(e) => setDraft((d) => ({ ...d, pointsCorrect: e.target.value }))} placeholder="정답 점수 (기본 3)" />
+          <Input value={draft.pointsWrong} onChange={(e) => setDraft((d) => ({ ...d, pointsWrong: e.target.value }))} placeholder="오답 점수 (기본 0)" />
+        </div>
         <div className="text-xs text-zinc-400">선택지 (줄바꿈으로 구분, 최소 2개)</div>
         <Textarea value={draft.optionsText} onChange={(e) => setDraft((d) => ({ ...d, optionsText: e.target.value }))} />
         <div>
@@ -116,7 +126,9 @@ export default function AdminQuestionsPage() {
                 divisionId: draft.divisionId,
                 title: draft.title,
                 description: draft.description || undefined,
-                options
+                options,
+                pointsCorrect: draft.pointsCorrect ? Number(draft.pointsCorrect) : undefined,
+                pointsWrong: draft.pointsWrong ? Number(draft.pointsWrong) : undefined
               });
               if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "입력 오류");
               const resp = await adminFetch("/api/admin/questions", { method: "POST", body: JSON.stringify(parsed.data) });
@@ -158,18 +170,39 @@ export default function AdminQuestionsPage() {
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                 {divisionTeams.map((t) => {
                   const key = `${t.id}:${q.id}`;
-                  const current = predictionsMap.get(key) ?? "";
+                  const current = predictionsMap.get(key)?.optionId ?? "";
+                  const currentRaw = predictionsMap.get(key)?.rawOutput ?? "";
                   return (
                     <div key={key} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 px-3 py-2">
-                      <div className="text-sm">{t.name}</div>
+                      <div className="min-w-0">
+                        <div className="text-sm">{t.name}</div>
+                        <div className="mt-1">
+                          <Input
+                            defaultValue={currentRaw}
+                            placeholder="모델 원문 출력(선택)"
+                            onBlur={async (e) => {
+                              if (!current) return;
+                              setError(null);
+                              const rawOutput = e.target.value;
+                              const resp = await adminFetch("/api/admin/predictions", {
+                                method: "POST",
+                                body: JSON.stringify({ teamId: t.id, questionId: q.id, optionId: current, rawOutput })
+                              });
+                              if (!resp.ok) return setError((await resp.json()).error ?? "저장 실패");
+                              await refresh(draft.divisionId);
+                            }}
+                          />
+                        </div>
+                      </div>
                       <Select
                         value={current}
                         onChange={async (e) => {
                           setError(null);
                           const optionId = e.target.value;
+                          if (!optionId) return;
                           const resp = await adminFetch("/api/admin/predictions", {
                             method: "POST",
-                            body: JSON.stringify({ teamId: t.id, questionId: q.id, optionId })
+                            body: JSON.stringify({ teamId: t.id, questionId: q.id, optionId, rawOutput: currentRaw })
                           });
                           if (!resp.ok) return setError((await resp.json()).error ?? "저장 실패");
                           await refresh(draft.divisionId);

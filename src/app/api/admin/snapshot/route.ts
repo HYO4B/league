@@ -12,9 +12,8 @@ export async function GET(req: Request) {
       orderBy: [{ createdAt: "desc" }],
       include: { options: { orderBy: [{ order: "asc" }] } }
     }),
-    prisma.prediction.findMany({ select: { teamId: true, questionId: true, optionId: true } })
+    prisma.prediction.findMany({ select: { teamId: true, questionId: true, optionId: true, rawOutput: true } })
   ]);
 
   return Response.json({ divisions, teams, questions, predictions });
 }
-

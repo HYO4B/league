@@ -6,7 +6,9 @@ const BodySchema = z.object({
   divisionId: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional(),
-  options: z.array(z.string().min(1)).min(2).max(8)
+  options: z.array(z.string().min(1)).min(2).max(8),
+  pointsCorrect: z.number().int().min(0).optional(),
+  pointsWrong: z.number().int().min(0).optional()
 });
 
 export async function POST(req: Request) {
@@ -22,6 +24,8 @@ export async function POST(req: Request) {
       divisionId: parsed.data.divisionId,
       title: parsed.data.title,
       description: parsed.data.description ?? null,
+      pointsCorrect: parsed.data.pointsCorrect ?? null,
+      pointsWrong: parsed.data.pointsWrong ?? null,
       options: {
         create: parsed.data.options.map((label, idx) => ({ label, order: idx + 1 }))
       }
@@ -31,4 +35,3 @@ export async function POST(req: Request) {
 
   return Response.json({ question });
 }
-

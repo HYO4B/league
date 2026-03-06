@@ -5,7 +5,8 @@ import { requireAdmin } from "@/lib/admin";
 const BodySchema = z.object({
   teamId: z.string().min(1),
   questionId: z.string().min(1),
-  optionId: z.string().min(1)
+  optionId: z.string().min(1),
+  rawOutput: z.string().optional()
 });
 
 export async function POST(req: Request) {
@@ -16,14 +17,13 @@ export async function POST(req: Request) {
   const parsed = BodySchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? "invalid body" }, { status: 400 });
 
-  const { teamId, questionId, optionId } = parsed.data;
+  const { teamId, questionId, optionId, rawOutput } = parsed.data;
 
   const prediction = await prisma.prediction.upsert({
     where: { teamId_questionId: { teamId, questionId } },
-    create: { teamId, questionId, optionId },
-    update: { optionId }
+    create: { teamId, questionId, optionId, rawOutput: rawOutput ?? null },
+    update: { optionId, rawOutput: rawOutput ?? undefined }
   });
 
   return Response.json({ prediction });
 }
-

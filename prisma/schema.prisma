@@ -43,6 +43,8 @@ model Question {
   divisionId      String
   title           String
   description     String?
+  pointsCorrect   Int?
+  pointsWrong     Int?
   openAt          DateTime     @default(now())
   closeAt         DateTime?
   resolvedAt      DateTime?
@@ -78,6 +80,7 @@ model Prediction {
   teamId     String
   questionId String
   optionId   String
+  rawOutput  String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)

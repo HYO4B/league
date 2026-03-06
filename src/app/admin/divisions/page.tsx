@@ -90,6 +90,23 @@ export default function AdminDivisionsPage() {
 
       {error && <div className="rounded-lg border border-red-900 bg-red-950 px-3 py-2 text-sm">{error}</div>}
 
+      <Card className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="text-sm font-semibold">기본 세팅</div>
+          <div className="mt-1 text-sm text-zinc-300">1부 리그 + 기본 팀(GPT/Claude/Perplexity/Gemini/Grok/GLM)을 자동으로 생성합니다.</div>
+        </div>
+        <Button
+          onClick={async () => {
+            setError(null);
+            const resp = await adminFetch("/api/admin/bootstrap", { method: "POST" });
+            if (!resp.ok) return setError((await resp.json()).error ?? "실패");
+            await refresh();
+          }}
+        >
+          기본 생성
+        </Button>
+      </Card>
+
       <Card className="space-y-3">
         <div className="text-sm font-semibold">디비전 추가</div>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
