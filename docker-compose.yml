@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: llm-league-postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: llm_league
+    ports:
+      - "5432:5432"
+    volumes:
+      - llm_league_pgdata:/var/lib/postgresql/data
+
+volumes:
+  llm_league_pgdata:
+
