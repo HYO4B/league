@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { Card, Pill, Table, Th, Td } from "@/components/ui";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 type Props = { params: Promise<{ divisionId: string }> };
 
 function pct(numerator: number, denominator: number) {
@@ -128,4 +130,3 @@ export default async function DivisionPage({ params }: Props) {
     </div>
   );
 }
-

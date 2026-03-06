@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const divisions = await prisma.division.findMany({
     orderBy: [{ season: "desc" }, { tier: "asc" }, { name: "asc" }],
@@ -45,4 +47,3 @@ export default async function HomePage() {
     </div>
   );
 }
-
