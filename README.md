@@ -20,7 +20,6 @@ docker compose up -d
 `llm-league/.env` 파일 생성:
 ```bash
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/llm_league?schema=public"
-DIRECT_URL="postgresql://postgres:postgres@localhost:5432/llm_league?schema=public"
 ADMIN_TOKEN="change-me"
 ```
 
@@ -36,8 +35,7 @@ npm run dev
 ## 배포 (Vercel)
 1. 이 폴더(`llm-league`)를 별도 GitHub 저장소로 푸시
 2. Vercel에서 Import 후 환경변수 등록
-   - `DATABASE_URL` (Vercel Postgres의 **Prisma/Pooled URL** 권장)
-   - `DIRECT_URL` (Vercel Postgres의 **Non-pooled URL** 권장, 마이그레이션용)
+   - `DATABASE_URL` (Vercel/Supabase Postgres 연결 문자열)
    - `ADMIN_TOKEN`
 3. 최초 1회: Vercel 빌드가 DB에 마이그레이션을 적용하도록 `npm run build`에 `prisma migrate deploy`가 포함되어 있습니다.
 
