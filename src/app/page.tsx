@@ -4,11 +4,40 @@ import { Card } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
+function isMissingTables(err: unknown) {
+  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2021";
+}
+
 export default async function HomePage() {
-  const divisions = await prisma.division.findMany({
-    orderBy: [{ season: "desc" }, { tier: "asc" }, { name: "asc" }],
-    include: { _count: { select: { teams: true, questions: true } } }
-  });
+  let divisions:
+    | { id: string; name: string; season: string; tier: number; _count: { teams: number; questions: number } }[]
+    | null = null;
+  try {
+    divisions = await prisma.division.findMany({
+      orderBy: [{ season: "desc" }, { tier: "asc" }, { name: "asc" }],
+      include: { _count: { select: { teams: true, questions: true } } }
+    });
+  } catch (e) {
+    if (isMissingTables(e)) {
+      return (
+        <div className="space-y-4">
+          <Card>
+            <div className="text-sm font-semibold">DB 마이그레이션이 필요합니다</div>
+            <div className="mt-1 text-sm text-zinc-300">
+              Supabase(Postgres)에 연결은 됐지만 테이블이 아직 생성되지 않았어요. Vercel에서 환경변수 설정 후 Redeploy를 한 번 더 해주세요.
+            </div>
+            <div className="mt-3 text-xs text-zinc-400">
+              체크: `DIRECT_URL(5432)` 설정 → Redeploy → 빌드 로그에서 `prisma migrate deploy` 실행 확인
+            </div>
+          </Card>
+          <Link href="/admin" className="text-sm text-zinc-300 hover:text-zinc-50">
+            관리자 페이지로 →
+          </Link>
+        </div>
+      );
+    }
+    throw e;
+  }
 
   return (
     <div className="space-y-6">
@@ -18,7 +47,7 @@ export default async function HomePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {divisions.map((d) => (
+        {divisions?.map((d) => (
           <Link key={d.id} href={`/d/${d.id}`}>
             <Card className="hover:border-zinc-600">
               <div className="flex items-start justify-between gap-3">

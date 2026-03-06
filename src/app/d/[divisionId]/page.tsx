@@ -6,6 +6,10 @@ export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ divisionId: string }> };
 
+function isMissingTables(err: unknown) {
+  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2021";
+}
+
 function pct(numerator: number, denominator: number) {
   if (denominator === 0) return "0%";
   return `${Math.round((numerator / denominator) * 1000) / 10}%`;
@@ -14,9 +18,27 @@ function pct(numerator: number, denominator: number) {
 export default async function DivisionPage({ params }: Props) {
   const { divisionId } = await params;
 
-  const division = await prisma.division.findUnique({
-    where: { id: divisionId }
-  });
+  let division: { id: string; name: string; season: string; tier: number; pointsCorrect: number; pointsWrong: number } | null = null;
+  try {
+    division = await prisma.division.findUnique({ where: { id: divisionId } });
+  } catch (e) {
+    if (isMissingTables(e)) {
+      return (
+        <div className="space-y-4">
+          <Card>
+            <div className="text-sm font-semibold">DB 마이그레이션이 필요합니다</div>
+            <div className="mt-1 text-sm text-zinc-300">
+              테이블이 아직 없어서 순위표를 불러올 수 없어요. Vercel에서 `DIRECT_URL(5432)`을 설정하고 Redeploy 해주세요.
+            </div>
+          </Card>
+          <Link href="/admin" className="text-sm text-zinc-300 hover:text-zinc-50">
+            관리자 페이지로 →
+          </Link>
+        </div>
+      );
+    }
+    throw e;
+  }
   if (!division) return <div className="text-sm text-zinc-300">없는 디비전입니다.</div>;
 
   const teams = await prisma.team.findMany({
