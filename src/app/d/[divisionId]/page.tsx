@@ -114,8 +114,13 @@ export default async function DivisionPage({ params }: Props) {
         </Link>
       </div>
 
-      <Card>
-        <div className="text-sm font-semibold">순위표 (확정 문항 기준)</div>
+      <Card className="overflow-hidden">
+        <div className="border-b border-zinc-800/80 bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-emerald-500/10 px-5 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-base font-semibold">순위표</div>
+            <div className="text-sm text-zinc-300">확정 문항 기준</div>
+          </div>
+        </div>
         <div className="mt-3 overflow-x-auto">
           <Table>
             <thead>
@@ -129,13 +134,22 @@ export default async function DivisionPage({ params }: Props) {
             </thead>
             <tbody>
               {standings.map((s, idx) => (
-                <tr key={s.team.id} className="border-t border-zinc-800">
+                <tr
+                  key={s.team.id}
+                  className={[
+                    "border-t border-zinc-800",
+                    idx % 2 === 1 ? "bg-zinc-950/30" : "",
+                    idx === 0 ? "bg-gradient-to-r from-amber-500/10 via-transparent to-transparent" : ""
+                  ].join(" ")}
+                >
                   <Td className="text-zinc-400">{idx + 1}</Td>
                   <Td>
                     <div className="font-medium">{s.team.name}</div>
                     {s.team.provider && <div className="text-xs text-zinc-400">{s.team.provider}</div>}
                   </Td>
-                  <Td className="text-right font-semibold">{s.points}</Td>
+                  <Td className="text-right font-semibold">
+                    {idx === 0 ? <Pill tone="amber">{s.points}</Pill> : s.points}
+                  </Td>
                   <Td className="text-right">
                     {s.correct}/{s.total}
                   </Td>

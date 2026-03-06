@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Card } from "@/components/ui";
+import { Card, Pill } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -41,10 +41,18 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">디비전</h1>
-        <p className="mt-2 text-base text-zinc-300">디비전을 선택하면 순위표를 볼 수 있어요.</p>
-      </div>
+      <Card className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-emerald-500/10" />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="sky">예측 리그</Pill>
+            <Pill tone="indigo">승점제</Pill>
+            <Pill tone="green">순위표</Pill>
+          </div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">디비전</h1>
+          <p className="mt-2 text-base text-zinc-200/90">디비전을 선택하면 순위표와 유형별 분석을 볼 수 있어요.</p>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {divisions?.map((d) => (
