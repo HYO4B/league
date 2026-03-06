@@ -16,7 +16,7 @@ type Question = {
   correctOptionId: string | null;
   pointsCorrect: number | null;
   pointsWrong: number | null;
-  options: { id: string; label: string; order: number }[];
+  options: { id: string; label: string; order: number; resolvedPoints?: number | null }[];
 };
 
 type Prediction = { teamId: string; questionId: string; optionId: string; rawOutput?: string | null };
@@ -36,6 +36,7 @@ export default function AdminQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [payoutDrafts, setPayoutDrafts] = useState<Record<string, Record<string, string>>>({});
 
   const [draft, setDraft] = useState({
     divisionId: "",
@@ -75,6 +76,19 @@ export default function AdminQuestionsPage() {
   const activeDivisionId = draft.divisionId;
   const divisionTeams = useMemo(() => teams.filter((t) => t.divisionId === activeDivisionId).sort((a, b) => a.name.localeCompare(b.name)), [teams, activeDivisionId]);
   const divisionQuestions = useMemo(() => questions.filter((q) => q.divisionId === activeDivisionId).sort((a, b) => (a.resolvedAt ? 1 : 0) - (b.resolvedAt ? 1 : 0)), [questions, activeDivisionId]);
+
+  useEffect(() => {
+    setPayoutDrafts((prev) => {
+      const next = { ...prev };
+      for (const q of divisionQuestions) {
+        if (next[q.id]) continue;
+        const optMap: Record<string, string> = {};
+        for (const o of q.options) optMap[o.id] = o.resolvedPoints == null ? "" : String(o.resolvedPoints);
+        next[q.id] = optMap;
+      }
+      return next;
+    });
+  }, [divisionQuestions]);
 
   const predictionsMap = useMemo(() => {
     const map = new Map<string, { optionId: string; rawOutput: string }>();
@@ -166,6 +180,89 @@ export default function AdminQuestionsPage() {
             </div>
 
             <div className="rounded-lg border border-zinc-800 p-3">
+              <div className="text-xs font-semibold text-zinc-200">결과 점수 (우승/준우승/3등 등)</div>
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+                {q.options
+                  .slice()
+                  .sort((a, b) => a.order - b.order)
+                  .map((o) => {
+                    const value = payoutDrafts[q.id]?.[o.id] ?? "";
+                    return (
+                      <div key={o.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 px-3 py-2">
+                        <div className="text-sm">{o.label}</div>
+                        <Input
+                          value={value}
+                          onChange={(e) =>
+                            setPayoutDrafts((d) => ({
+                              ...d,
+                              [q.id]: { ...(d[q.id] ?? {}), [o.id]: e.target.value }
+                            }))
+                          }
+                          placeholder="점수 (예: 3)"
+                          className="w-32 text-right"
+                        />
+                      </div>
+                    );
+                  })}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    setError(null);
+                    const entries = Object.entries(payoutDrafts[q.id] ?? {});
+                    const payouts = entries
+                      .filter(([, v]) => v.trim() !== "")
+                      .map(([optionId, v]) => ({ optionId, points: Number(v) }))
+                      .filter((p) => Number.isFinite(p.points));
+                    const resp = await adminFetch(`/api/admin/questions/${q.id}/payouts`, {
+                      method: "POST",
+                      body: JSON.stringify({ payouts, finalize: false })
+                    });
+                    if (!resp.ok) return setError((await resp.json()).error ?? "저장 실패");
+                    await refresh(draft.divisionId);
+                  }}
+                >
+                  점수 저장
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setError(null);
+                    const entries = Object.entries(payoutDrafts[q.id] ?? {});
+                    const payouts = entries
+                      .filter(([, v]) => v.trim() !== "")
+                      .map(([optionId, v]) => ({ optionId, points: Number(v) }))
+                      .filter((p) => Number.isFinite(p.points));
+                    const resp = await adminFetch(`/api/admin/questions/${q.id}/payouts`, {
+                      method: "POST",
+                      body: JSON.stringify({ payouts, finalize: true })
+                    });
+                    if (!resp.ok) return setError((await resp.json()).error ?? "확정 실패");
+                    await refresh(draft.divisionId);
+                  }}
+                >
+                  확정
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    setError(null);
+                    const resp = await adminFetch(`/api/admin/questions/${q.id}/payouts`, {
+                      method: "POST",
+                      body: JSON.stringify({ clear: true })
+                    });
+                    if (!resp.ok) return setError((await resp.json()).error ?? "해제 실패");
+                    setPayoutDrafts((d) => ({ ...d, [q.id]: {} }));
+                    await refresh(draft.divisionId);
+                  }}
+                >
+                  결과 초기화
+                </Button>
+              </div>
+              <div className="mt-2 text-xs text-zinc-400">예: 우승 3점, 준우승 2점, 3등 1점, 나머지 0점</div>
+            </div>
+
+            <div className="rounded-lg border border-zinc-800 p-3">
               <div className="text-xs font-semibold text-zinc-200">예측 입력</div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                 {divisionTeams.map((t) => {
@@ -223,50 +320,6 @@ export default function AdminQuestionsPage() {
                   );
                 })}
                 {divisionTeams.length === 0 && <div className="text-sm text-zinc-300">이 디비전에 팀이 없어요.</div>}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="text-xs text-zinc-400">정답 확정</div>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={q.correctOptionId ?? ""}
-                  onChange={async (e) => {
-                    setError(null);
-                    const correctOptionId = e.target.value || null;
-                    const resp = await adminFetch(`/api/admin/questions/${q.id}/resolve`, {
-                      method: "POST",
-                      body: JSON.stringify({ correctOptionId })
-                    });
-                    if (!resp.ok) return setError((await resp.json()).error ?? "확정 실패");
-                    await refresh(draft.divisionId);
-                  }}
-                  className="w-64"
-                >
-                  <option value="">미확정</option>
-                  {q.options
-                    .slice()
-                    .sort((a, b) => a.order - b.order)
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.label}
-                      </option>
-                    ))}
-                </Select>
-                <Button
-                  variant="ghost"
-                  onClick={async () => {
-                    setError(null);
-                    const resp = await adminFetch(`/api/admin/questions/${q.id}/resolve`, {
-                      method: "POST",
-                      body: JSON.stringify({ correctOptionId: null })
-                    });
-                    if (!resp.ok) return setError((await resp.json()).error ?? "해제 실패");
-                    await refresh(draft.divisionId);
-                  }}
-                >
-                  해제
-                </Button>
               </div>
             </div>
           </Card>

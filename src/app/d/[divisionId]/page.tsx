@@ -47,8 +47,16 @@ export default async function DivisionPage({ params }: Props) {
   });
 
   const resolvedQuestions = await prisma.question.findMany({
-    where: { divisionId, resolvedAt: { not: null }, correctOptionId: { not: null } },
-    select: { id: true, correctOptionId: true, resolvedAt: true, title: true, pointsCorrect: true, pointsWrong: true },
+    where: { divisionId, resolvedAt: { not: null } },
+    select: {
+      id: true,
+      correctOptionId: true,
+      resolvedAt: true,
+      title: true,
+      pointsCorrect: true,
+      pointsWrong: true,
+      options: { select: { id: true, resolvedPoints: true } }
+    },
     orderBy: [{ resolvedAt: "desc" }],
   });
 
@@ -68,14 +76,16 @@ export default async function DivisionPage({ params }: Props) {
         const p = predictions.find((x) => x.teamId === t.id && x.questionId === q.id);
         if (!p) continue;
         total += 1;
-        if (p.optionId === q.correctOptionId) correct += 1;
+        if (q.correctOptionId && p.optionId === q.correctOptionId) correct += 1;
       }
       const points = resolvedQuestions.reduce((acc, q) => {
         const p = predictions.find((x) => x.teamId === t.id && x.questionId === q.id);
         if (!p) return acc;
+        const optionPoints = q.options.find((o) => o.id === p.optionId)?.resolvedPoints;
+        if (optionPoints != null) return acc + optionPoints;
         const pc = q.pointsCorrect ?? division.pointsCorrect;
         const pw = q.pointsWrong ?? division.pointsWrong;
-        return acc + (p.optionId === q.correctOptionId ? pc : pw);
+        return acc + (q.correctOptionId && p.optionId === q.correctOptionId ? pc : pw);
       }, 0);
       return { team: t, points, correct, total };
     })
