@@ -23,3 +23,11 @@ export function formatKstDate(opts?: { daysAgo?: number }) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+export function formatNowKstDate() {
+  const nowMs = Date.now();
+  const kstNow = new Date(nowMs + KST_OFFSET_MS);
+  const yyyy = String(kstNow.getUTCFullYear());
+  const mm = String(kstNow.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(kstNow.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}

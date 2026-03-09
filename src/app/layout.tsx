@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import TrackPageView from "@/components/TrackPageView";
 
 export const metadata: Metadata = {
   title: "LLM League",
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body>
+        <TrackPageView />
         <div className="mx-auto max-w-6xl px-4 py-6">
           <header className="flex items-center justify-between gap-3">
             <Link href="/" className="text-xl font-semibold tracking-tight">

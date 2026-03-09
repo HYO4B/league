@@ -44,8 +44,13 @@ export async function GET(req: Request) {
     prisma.team.count({ where: { createdAt: { gte: startUtc, lt: endUtc } } })
   ]);
 
+  const traffic = await prisma.dailyTraffic.findUnique({ where: { dayKst: dayLabel } });
+  const pageviews = traffic?.pageviews ?? 0;
+  const visitors = traffic?.visitors ?? 0;
+
   const text =
     `*LLM League Daily Events* (${dayLabel} KST)\n` +
+    `• 방문자: *${visitors}* · 페이지뷰: *${pageviews}*\n` +
     `• 질문 생성: *${createdQuestions}*\n` +
     `• 예측 입력: *${createdPredictions}*\n` +
     `• 질문 확정(Resolve): *${resolvedQuestions}*\n` +
@@ -67,7 +72,6 @@ export async function GET(req: Request) {
     ok: true,
     dayLabel,
     rangeUtc: { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() },
-    counts: { createdQuestions, createdPredictions, resolvedQuestions, createdDivisions, createdTeams }
+    counts: { visitors, pageviews, createdQuestions, createdPredictions, resolvedQuestions, createdDivisions, createdTeams }
   });
 }
-
